@@ -1,13 +1,14 @@
 import os
 import time
 import string
+import numpy as np
 from typing import Union
+from colorama import Fore
 from pytube import YouTube
 from slugify import slugify
 from threading import Thread
 from datetime import datetime
 from youtubesearchpython import VideosSearch
-import numpy as np
 
 
 def distribute(elements: list, groups: int) -> list[list]:
@@ -15,6 +16,12 @@ def distribute(elements: list, groups: int) -> list[list]:
 
 
 def threads_finished(threads: list[Thread]) -> bool:
+    '''
+    Returns True if a list of thread objects have all completed
+    their processess, otherwise False.
+
+    :param threads: List of started thread objects
+    '''
     for t in threads:
         if t.is_alive():
             return False
@@ -23,7 +30,14 @@ def threads_finished(threads: list[Thread]) -> bool:
 
 class PlaylistBot():
     def __init__(self) -> None:
-        pass
+        self.downloaded = 0
+        self.failed = 0
+
+    def completed(self) -> int:
+        '''
+        Return the sum of the total downloadd and failed songs
+        '''
+        return self.downloaded+self.failed
 
     def watch_url(self, song: str) -> Union[str, None]:
         '''
@@ -73,9 +87,11 @@ class PlaylistBot():
             downloaded = self.download(u, dir)
             if verbose:
                 if downloaded:
+                    self.downloaded += 1
                     if not threaded:
                         print(' [  Ok  ]')
                 else:
+                    self.failed += 1
                     if not threaded:
                         print(' [ Fail ]')
 
@@ -100,9 +116,27 @@ class PlaylistBot():
             dt.start()
             working_threads.append(dt)
 
-        print('Downloading {} songs [Threads: {}]'.format(
+        print('Downloading {}{}{} songs [Threads: {}]'.format(
+            Fore.LIGHTCYAN_EX,
             len(watch_urls),
-            threads,))
+            Fore.RESET,
+            threads,
+        ))
+
         while not threads_finished(working_threads):
+            percent = self.completed() * 100 / len(watch_urls)
+            print('{c1}Progress: {_1} %{r} [{c2}{_2} / {_3} Attempted{r} | {c3}{_4} Downloaded{r} | {c4}{_5} Failed{r} ]'.format(
+                c1=Fore.LIGHTWHITE_EX,
+                c2=Fore.LIGHTYELLOW_EX,
+                c3=Fore.LIGHTGREEN_EX,
+                c4=Fore.LIGHTRED_EX,
+                r=Fore.RESET,
+                _1=percent,
+                _2=self.completed(),
+                _3=len(watch_urls),
+                _4=self.downloaded,
+                _5=self.failed,
+            ), end='', flush=True)
             time.sleep(2)
-            print('.', end='', flush=True)
+            print('\r', end='', flush=True)
+        print()

@@ -3,3 +3,4 @@ numpy
 youtube-search-python
 python-slugify
 shutil
+colorama
