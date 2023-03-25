@@ -1,0 +1,5 @@
+pytube
+numpy
+youtube-search-python
+python-slugify
+shutil
